@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Transcript Chunker</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(145deg, #e3f2fd, #ffffff);
+      color: #333;
+    }
+    body, html {
+      min-height: 100vh;
+      scroll-behavior: smooth;
+    }
+    header {
+      background: linear-gradient(to right, #007bff, #00bfff);
+      padding: 20px;
+      color: white;
+      text-align: center;
+      border-radius: 0 0 18px 18px;
+      box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
+      animation: fadeInHeader 0.8s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes fadeInHeader {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .container {
+      padding: 20px;
+      max-width: 900px;
+      margin: auto;
+      background: rgba(255,255,255,0.85);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+      margin-top: 32px;
+      margin-bottom: 32px;
+      animation: fadeInMain 0.7s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes fadeInMain {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1.5px solid #b3e5fc;
+      margin-top: 10px;
+      margin-bottom: 18px;
+      font-size: 15px;
+      transition: border 0.2s, box-shadow 0.2s;
+      min-height: 120px;
+      resize: vertical;
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 2px 8px #00bfff11;
+    }
+    textarea:focus {
+      border: 1.5px solid #007bff;
+      box-shadow: 0 2px 12px #007bff22;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px 5px 10px 0;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      box-shadow: 0 2px 8px #0001;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    button:active {
+      transform: scale(0.97);
+      box-shadow: 0 1px 4px #0002;
+    }
+    .chunk-button {
+      display: inline-block;
+      margin: 5px;
+      background: linear-gradient(90deg, #00bfff 0%, #007bff 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 15px;
+      padding: 10px 18px;
+      margin: 8px 8px 8px 0;
+      letter-spacing: 0.01em;
+      box-shadow: 0 2px 8px #00bfff22;
+      transition: background 0.3s, color 0.3s;
+    }
+    .chunk-button:active {
+      transform: scale(0.97);
+      box-shadow: 0 1px 4px #0002;
+    }
+    .chunk-button.copied {
+      background: linear-gradient(90deg, #28a745 0%, #00b894 100%);
+      color: #fff;
+    }
+    .ai-links {
+      margin: 24px 0 10px 0;
+      padding: 10px 0 0 0;
+      border-top: 1.5px dashed #b3e5fc;
+      animation: fadeInMain 0.7s 0.2s;
+    }
+    .ai-links button {
+      background: linear-gradient(90deg, #28a745 0%, #00b894 100%);
+      color: #fff;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 15px;
+      margin: 6px 8px 6px 0;
+      box-shadow: 0 2px 8px #28a74522;
+      transition: background 0.3s, color 0.3s;
+    }
+    .ai-links button:hover {
+      background: linear-gradient(90deg, #00b894 0%, #28a745 100%);
+    }
+    #showTutorialBtn {
+      box-shadow: 0 2px 8px #ffc10755;
+      animation: bounceIn 1.2s 0.2s;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0.7); opacity: 0; }
+      60% { transform: scale(1.1); opacity: 1; }
+      80% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+    #modeToggleBtn {
+      box-shadow: 0 2px 8px #007bff55;
+      animation: fadeInModeBtn 1.2s 0.3s;
+    }
+    @keyframes fadeInModeBtn {
+      from { opacity: 0; transform: scale(0.7); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      background: #f1f1f1;
+    }
+    body.dark-mode {
+      background: linear-gradient(145deg, #23272f, #181c22);
+      color: #f1f1f1;
+    }
+    body.dark-mode header {
+      background: linear-gradient(to right, #23272f, #007bff);
+      color: #fff;
+    }
+    body.dark-mode textarea,
+    body.dark-mode .container,
+    body.dark-mode .ai-links button,
+    body.dark-mode button {
+      background: #23272f;
+      color: #f1f1f1;
+      border-color: #444;
+    }
+    body.dark-mode button:hover {
+      background-color: #0056b3;
+    }
+    body.dark-mode footer {
+      background: #23272f;
+      color: #aaa;
+    }
+    body.dark-mode .container {
+      background: rgba(35,39,47,0.97);
+      box-shadow: 0 8px 32px 0 rgba(0,0,0,0.25);
+    }
+    body.dark-mode textarea {
+      background: #23272f;
+      border: 1.5px solid #444;
+      color: #f1f1f1;
+    }
+    body.dark-mode #quickTutorialFloating {
+      box-shadow: 0 8px 32px 0 rgba(0,0,0,0.25);
+      border: 1.5px solid #444;
+    }
+    /* Responsive styles */
+    @media (max-width: 600px) {
+      .container {
+        padding: 8px;
+      }
+      textarea {
+        font-size: 12px;
+      }
+      button {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+      .ai-links button {
+        margin-bottom: 6px;
+      }
+      #quickTutorialFloating {
+        right: 8px;
+        left: 8px;
+        max-width: 98vw;
+        padding: 12px 8px 10px 10px;
+        font-size: 14px;
+      }
+      #buddyTutorialFloating {
+        left: 8px;
+        right: 8px;
+        max-width: 98vw;
+        padding: 12px 8px 10px 10px;
+        font-size: 14px;
+      }
+      #buddyHelpBtn {
+        left: 8px;
+        bottom: 12px;
+        width: 44px;
+        height: 44px;
+        font-size: 1.5em;
+      }
+    }
+    /* Quick Tutorial Floating (right bottom) */
+    #quickTutorialFloating {
+      display: none;
+      position: fixed;
+      right: 18px;
+      bottom: 90px;
+      z-index: 1001;
+      background: #fffbe7;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+      padding: 22px 22px 18px 18px;
+      max-width: 340px;
+      font-size: 15.5px;
+      border: 1.5px solid #ffe082;
+      color: #222;
+      animation: fadeInBuddy 0.2s;
+    }
+    body.dark-mode #quickTutorialFloating {
+      background: #23272f;
+      color: #f1f1f1;
+      border-color: #444;
+    }
+    #closeQuickTutorialBtn {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: #ffc107;
+      color: #333;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    body.dark-mode #closeQuickTutorialBtn {
+      background: #ffe082;
+      color: #23272f;
+    }
+    @media (max-width: 600px) {
+      #quickTutorialFloating {
+        right: 8px;
+        left: 8px;
+        max-width: 98vw;
+        padding: 12px 8px 10px 10px;
+        font-size: 14px;
+      }
+    }
+    /* Buddy tutorial styles */
+    #buddyTutorial {
+      display: flex;
+      align-items: flex-start;
+      background: #e3f2fd;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px #0001;
+      padding: 18px 18px 18px 12px;
+      margin: 18px 0 24px 0;
+      max-width: 700px;
+      font-size: 16px;
+      position: relative;
+      border: 1px solid #b3e5fc;
+    }
+    #buddyAvatar {
+      font-size: 2.2em;
+      margin-right: 16px;
+      margin-top: 2px;
+    }
+    #buddySteps {
+      flex: 1;
+    }
+    #closeBuddyBtn {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: #ffc107;
+      color: #333;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    body.dark-mode #buddyTutorial {
+      background: #23272f;
+      color: #f1f1f1;
+      border-color: #444;
+    }
+    body.dark-mode #closeBuddyBtn {
+      background: #ffe082;
+      color: #23272f;
+    }
+    /* Buddy Help Button and Floating Tutorial */
+    #buddyHelpBtn {
+      position: fixed;
+      left: 18px;
+      bottom: 24px;
+      z-index: 1000;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 54px;
+      height: 54px;
+      font-size: 2em;
+      box-shadow: 0 2px 8px #0002;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    #buddyHelpBtn:hover {
+      background: #0056b3;
+    }
+    #buddyTutorialFloating {
+      display: none;
+      position: fixed;
+      left: 18px;
+      bottom: 90px;
+      z-index: 1001;
+      background: #e3f2fd;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px #0002;
+      padding: 22px 22px 18px 18px;
+      max-width: 340px;
+      font-size: 15.5px;
+      border: 1.5px solid #b3e5fc;
+      color: #222;
+      animation: fadeInBuddy 0.2s;
+    }
+    @keyframes fadeInBuddy {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #buddyTutorialFloating #buddyAvatar {
+      font-size: 2em;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    #closeBuddyFloatingBtn {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: #ffc107;
+      color: #333;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    body.dark-mode #buddyTutorialFloating {
+      background: #23272f;
+      color: #f1f1f1;
+      border-color: #444;
+    }
+    body.dark-mode #closeBuddyFloatingBtn {
+      background: #ffe082;
+      color: #23272f;
+    }
+    /* Modern UI/UX and Animations */
+    .container {
+      background: rgba(255,255,255,0.85);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+      margin-top: 32px;
+      margin-bottom: 32px;
+      animation: fadeInMain 0.7s cubic-bezier(.4,0,.2,1);
+    }
+    @keyframes fadeInMain {
+      from { opacity: 0; transform: translateY(40px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    header {
+      border-radius: 0 0 18px 18px;
+      box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);
+      animation: fadeInHeader 0.8s cubic-bezier(.4,0,.2,1);
+    }
+    button, .chunk-button {
+      box-shadow: 0 2px 8px #0001;
+      transition: background 0.3s, box-shadow 0.3s, transform 0.1s;
+      outline: none;
+    }
+    button:active, .chunk-button:active {
+      transform: scale(0.97);
+      box-shadow: 0 1px 4px #0002;
+    }
+    .chunk-button {
+      background: linear-gradient(90deg, #00bfff 0%, #007bff 100%);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 15px;
+      padding: 10px 18px;
+      margin: 8px 8px 8px 0;
+      letter-spacing: 0.01em;
+      box-shadow: 0 2px 8px #00bfff22;
+      transition: background 0.3s, color 0.3s;
+    }
+    .chunk-button.copied {
+      background: linear-gradient(90deg, #28a745 0%, #00b894 100%);
+      color: #fff;
+    }
+    .ai-links button {
+      background: linear-gradient(90deg, #28a745 0%, #00b894 100%);
+      color: #fff;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 15px;
+      margin: 6px 8px 6px 0;
+      box-shadow: 0 2px 8px #28a74522;
+      transition: background 0.3s, color 0.3s;
+    }
+    .ai-links button:hover {
+      background: linear-gradient(90deg, #00b894 0%, #28a745 100%);
+    }
+    #showTutorialBtn {
+      box-shadow: 0 2px 8px #ffc10755;
+      animation: bounceIn 1.2s 0.2s;
+    }
+    @keyframes bounceIn {
+      0% { transform: scale(0.7); opacity: 0; }
+      60% { transform: scale(1.1); opacity: 1; }
+      80% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+    #modeToggleBtn {
+      box-shadow: 0 2px 8px #007bff55;
+      animation: fadeInModeBtn 1.2s 0.3s;
+    }
+    @keyframes fadeInModeBtn {
+      from { opacity: 0; transform: scale(0.7); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 14px;
+      background: #f1f1f1;
+    }
+    .ai-links {
+      margin: 24px 0 10px 0;
+      padding: 10px 0 0 0;
+      border-top: 1.5px dashed #b3e5fc;
+      animation: fadeInMain 0.7s 0.2s;
+    }
+    body.dark-mode .ai-links {
+      border-top: 1.5px dashed #444;
+    }
+    /* Responsive styles */
+    @media (max-width: 600px) {
+      .container {
+        padding: 8px;
+      }
+      textarea {
+        font-size: 12px;
+      }
+      button {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+      .ai-links button {
+        margin-bottom: 6px;
+      }
+      #quickTutorialFloating {
+        right: 8px;
+        left: 8px;
+        max-width: 98vw;
+        padding: 12px 8px 10px 10px;
+        font-size: 14px;
+      }
+      #buddyTutorialFloating {
+        left: 8px;
+        right: 8px;
+        max-width: 98vw;
+        padding: 12px 8px 10px 10px;
+        font-size: 14px;
+      }
+      #buddyHelpBtn {
+        left: 8px;
+        bottom: 12px;
+        width: 44px;
+        height: 44px;
+        font-size: 1.5em;
+      }
+    }
+    /* Quick Tutorial Floating (right bottom) */
+    #quickTutorialFloating {
+      display: none;
+      position: fixed;
+      right: 18px;
+      bottom: 90px;
+      z-index: 1001;
+      background: #fffbe7;
+      border-radius: 14px;
+      box-shadow: 0 8px 32px 0 rgba(31,38,135,0.18);
+      padding: 22px 22px 18px 18px;
+      max-width: 340px;
+      font-size: 15.5px;
+      border: 1.5px solid #ffe082;
+      color: #222;
+      animation: fadeInBuddy 0.2s;
+    }
+    body.dark-mode #quickTutorialFloating {
+      background: #23272f;
+      color: #f1f1f1;
+      border-color: #444;
+    }
+    #closeQuickTutorialBtn {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: #ffc107;
+      color: #333;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    body.dark-mode #closeQuickTutorialBtn {
+      background: #ffe082;
+      color: #23272f;
+    }
+    @media (max-width: 600px) {
+      #quickTutorialFloating {
+        right: 8px;
+        left: 8px;
+        max-width: 98vw;
+        padding: 12px 8px 10px 10px;
+        font-size: 14px;
+      }
+    }
+    /* Buddy tutorial styles */
+    #buddyTutorial {
+      display: flex;
+      align-items: flex-start;
+      background: #e3f2fd;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px #0001;
+      padding: 18px 18px 18px 12px;
+      margin: 18px 0 24px 0;
+      max-width: 700px;
+      font-size: 16px;
+      position: relative;
+      border: 1px solid #b3e5fc;
+    }
+    #buddyAvatar {
+      font-size: 2.2em;
+      margin-right: 16px;
+      margin-top: 2px;
+    }
+    #buddySteps {
+      flex: 1;
+    }
+    #closeBuddyBtn {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: #ffc107;
+      color: #333;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    body.dark-mode #buddyTutorial {
+      background: #23272f;
+      color: #f1f1f1;
+      border-color: #444;
+    }
+    body.dark-mode #closeBuddyBtn {
+      background: #ffe082;
+      color: #23272f;
+    }
+    /* Buddy Help Button and Floating Tutorial */
+    #buddyHelpBtn {
+      position: fixed;
+      left: 18px;
+      bottom: 24px;
+      z-index: 1000;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 54px;
+      height: 54px;
+      font-size: 2em;
+      box-shadow: 0 2px 8px #0002;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    #buddyHelpBtn:hover {
+      background: #0056b3;
+    }
+    #buddyTutorialFloating {
+      display: none;
+      position: fixed;
+      left: 18px;
+      bottom: 90px;
+      z-index: 1001;
+      background: #e3f2fd;
+      border-radius: 14px;
+      box-shadow: 0 4px 16px #0002;
+      padding: 22px 22px 18px 18px;
+      max-width: 340px;
+      font-size: 15.5px;
+      border: 1.5px solid #b3e5fc;
+      color: #222;
+      animation: fadeInBuddy 0.2s;
+    }
+    @keyframes fadeInBuddy {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    #buddyTutorialFloating #buddyAvatar {
+      font-size: 2em;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    #closeBuddyFloatingBtn {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      background: #ffc107;
+      color: #333;
+      border: none;
+      border-radius: 4px;
+      padding: 2px 10px;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    body.dark-mode #buddyTutorialFloating {
+      background: #23272f;
+      color: #f1f1f1;
+      border-color: #444;
+    }
+    body.dark-mode #closeBuddyFloatingBtn {
+      background: #ffe082;
+      color: #23272f;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎬 Manus Thumnail Code</h1>
+    <p>Create AI-ready chunks with one click</p>
+  </header>
+  <div class="container">
+    <button onclick="pasteTranscript()">📥 Paste Transcript</button>
+    <button onclick="processTranscript()">⚡ Generate Chunks</button>
+ 
+
+    <textarea id="transcript" rows="10" placeholder="Paste full transcript with title here..."></textarea>
+
+    <div id="chunkButtons"></div>
+
+    <div class="ai-links">
+      <h3>🧠 Open in AI Tools</h3>
+      <button onclick="window.open('https://manus.im/app/RUymFmce8X4PGikaWSXjMb', '_blank')">manus</button>
+    </div>
+
+    <div id="consoleScriptBox" style="display:none">
+(async () => {
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function waitForTranscriptSegments(maxWait = 10000) {
+        const interval = 500;
+        let waited = 0;
+        while (waited < maxWait) {
+            const segments = document.querySelectorAll('ytd-transcript-segment-renderer');
+            if (segments.length > 0) return segments;
+            await sleep(interval);
+            waited += interval;
+        }
+        return null;
+    }
+
+    // Step 1: Get video ID
+    const urlParams = new URLSearchParams(window.location.search);
+    const videoId = urlParams.get('v') || window.location.pathname.split('/').pop();
+
+    // Step 2: Try to open transcript if not already open
+    let transcriptSegments = document.querySelectorAll('ytd-transcript-segment-renderer');
+    if (transcriptSegments.length === 0) {
+        console.log("📄 Transcript not open. Trying to open...");
+
+        const showBtn = [...document.querySelectorAll('button')]
+            .find(btn => btn.innerText.trim().toLowerCase().includes('transcript'));
+
+        if (showBtn) {
+            showBtn.click();
+            console.log("✅ Clicked 'Show transcript'");
+        } else {
+            console.log("❌ Transcript button not found. May not be available.");
+            return;
+        }
+
+        transcriptSegments = await waitForTranscriptSegments();
+        if (!transcriptSegments) {
+            console.log("❌ Transcript failed to load.");
+            return;
+        }
+    }
+
+    // Step 3: Extract transcript
+    let transcriptText = '';
+    transcriptSegments.forEach(seg => {
+        const time = seg.querySelector('.segment-timestamp')?.innerText.trim() || '';
+        const text = seg.querySelector('.segment-text')?.innerText.trim() || '';
+        transcriptText += `${time} - ${text}\n`;
+    });
+
+    // Step 4: Video title
+    let videoTitle = document.querySelector('#title h1 yt-formatted-string')?.textContent?.trim()
+        || document.title.replace(" - YouTube", "").trim();
+
+    // Step 5: Thumbnail URL
+    const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+
+    // Step 6: Final data
+    const finalData = `🎬 Title: ${videoTitle}\n🖼️ Thumbnail: ${thumbnailUrl}\n\n📄 Transcript:\n${transcriptText}`;
+
+    // Step 7: Try clipboard
+    async function copyToClipboard(text) {
+        try {
+            await navigator.clipboard.writeText(text);
+            console.log("✅ Copied to clipboard using Clipboard API");
+        } catch (err) {
+            console.warn("⚠️ Clipboard API failed. Using fallback...");
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand("copy");
+                console.log("✅ Copied using execCommand fallback");
+            } catch (err) {
+                console.error("❌ Manual copy failed. Please copy manually:", text);
+            }
+            document.body.removeChild(textarea);
+        }
+    }
+
+    await copyToClipboard(finalData);
+})();
+    </div>
+
+    <div id="driveScriptBox" style="display:none">
+(async () => {
+    // Google Drive Video Transcript Extractor
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    async function waitForSegments(maxWait = 10000) {
+        const interval = 500;
+        let waited = 0;
+        while (waited < maxWait) {
+            const segments = document.querySelectorAll('.JnEIz');
+            if (segments.length > 0) return segments;
+            await sleep(interval);
+            waited += interval;
+        }
+        return null;
+    }
+    // Step 1: Try to open transcript if not already open
+    let segments = document.querySelectorAll('.JnEIz');
+    if (segments.length === 0) {
+        console.log("📄 Transcript not found. Please open the transcript panel in Google Drive video player.");
+        return;
+    }
+    // Step 2: Extract transcript
+    let transcriptText = '';
+    segments.forEach(seg => {
+        const time = seg.querySelector('.QvmvOc')?.innerText.trim();
+        const text = seg.querySelector('.wyBDIb')?.innerText.trim();
+        if (time && text) {
+            transcriptText += `${time} - ${text}\n`;
+        }
+    });
+    // Try to get the title
+    let title = document.querySelector('.kltatb')?.innerText.trim() || document.title.trim();
+    const finalData = `🎬 Title: ${title}\n\n📄 Transcript:\n${transcriptText}`;
+    // Copy to clipboard
+    try {
+        await navigator.clipboard.writeText(finalData);
+        alert('✅ Transcript copied to clipboard!');
+    } catch (err) {
+        // Fallback
+        const textarea = document.createElement('textarea');
+        textarea.value = finalData;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            alert('✅ Transcript copied (fallback)!');
+        } catch (err) {
+            alert('❌ Copy failed. Please copy manually.');
+        }
+        document.body.removeChild(textarea);
+    }
+})();
+    </div>
+
+    <div id="quickTutorialFloating">
+      <b style="font-size:1.08em;">Quick Tutorial</b>
+      <ol style="margin:10px 0 10px 20px; padding:0 0 0 0;">
+        <li style="margin-bottom:7px;"><b>Copy Console Script & Go to YouTube:</b> Click <button onclick="copyConsoleScriptAndGoToYouTube();event.stopPropagation();" style="background:#007bff;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:14px;">Copy & Go</button> to copy the script and open YouTube.</li>
+        <li style="margin-bottom:7px;"><b>Copy Console Script & Go to Google Drive:</b> Click <button onclick="copyDriveScriptAndGoToDrive();event.stopPropagation();" style="background:#007bff;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:14px;">Copy & Go</button> to copy the script and open Google Drive transcript page.</li>
+        <li style="margin-bottom:7px;"><b>Open Developer Tools:</b> On YouTube or Google Drive, press <b>F12</b> or <b>Ctrl+Shift+I</b>, go to <b>Console</b>, paste (Ctrl+V) the script, press <b>Enter</b>.</li>
+        <li style="margin-bottom:7px;"><b>Copy Transcript:</b> The transcript is now copied to your clipboard.</li>
+        <li style="margin-bottom:7px;"><b>Paste Transcript:</b> Click <button onclick="pasteTranscript();event.stopPropagation();" style="background:#28a745;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:14px;">Paste</button> here.</li>
+        <li style="margin-bottom:7px;"><b>Generate Chunks:</b> Chunks are made automatically, or click <button onclick="processTranscript();event.stopPropagation();" style="background:#ffc107;color:#333;border:none;border-radius:4px;padding:2px 8px;font-size:14px;">Generate</button> if needed.</li>
+        <li style="margin-bottom:7px;"><b>Copy Chunks:</b> Use <b>Copy Chunk</b> buttons for your AI tool.</li>
+      </ol>
+      <span style="font-size:13px;color:#888;">Click ✖ to close this help.</span>
+      <button id="closeQuickTutorialBtn" onclick="toggleQuickTutorial();event.stopPropagation();">✖</button>
+    </div>
+  </div>
+  <footer>
+    ⚙️ Tools by <a href="https://www.youtube.com/@JobOrientedCoding" target="_blank">@JobOrientedCoding</a> and <a href="https://www.youtube.com/@PracticalStockMarket" target="_blank">@PracticalStockMarket</a> | India 🇮🇳<br>
+    📚 Free Coding + Stock Market Tools
+  </footer>
+  <script>
+    let chunkData = [];
+
+    function splitTranscriptByTime(transcript, maxMinutes = 30) {
+      const lines = transcript.split("\n");
+      const chunks = [];
+      let currentChunk = [];
+      let currentMinutes = 0;
+      const timeToMinutes = (timeStr) => {
+        const parts = timeStr.split(":").map(Number);
+        return parts.length === 3 ? parts[0] * 60 + parts[1] : parts[0] + parts[1] / 60;
+      };
+      for (let line of lines) {
+        const match = line.match(/^(\d{1,2}:\d{2}(?::\d{2})?)\s*-\s*(.+)$/);
+        if (match) {
+          const time = match[1];
+          const text = match[2];
+          const minutes = timeToMinutes(time);
+          if (minutes - currentMinutes > maxMinutes) {
+            chunks.push(currentChunk.join("\n"));
+            currentChunk = [];
+            currentMinutes = minutes;
+          }
+          currentChunk.push(`${time} - ${text}`);
+        }
+      }
+      if (currentChunk.length > 0) chunks.push(currentChunk.join("\n"));
+      return chunks;
+    }
+
+    function generatePrompt(chunkText, index, total) {
+      return `📦 Part ${index + 1}/${total}
+
+Updated Thumbnail Creation Prompt (Shortcut Podcast Version)
+
+Channel Name: Time Bacha Bhai
+Mission Objective: एक ऐसा thumbnail जो user को बोले –
+"भाई, पहले वाले पूरे podcast मत देख, हमने काम की बात निकाल दी है!"
+
+Thumbnail Psychology & Hook:
+
+Thumbnail देखते ही user को लगे कि –
+"अरे ये तो वही वाला podcast है जो सब जगह चल रहा था, लेकिन इसने shortcut निकाल दिया!"
+
+Thumbnail में comparison वाला feel आना चाहिए –
+Old Podcast vs Time Bacha Bhai का Shortcut Version
+
+FOMO और Time Saving दोनों का mix feel आना चाहिए
+
+Thumbnail Text Ideas (Use Bold Hindi Fonts):
+
+"POORA PODCAST मत देखो!"
+
+"Shortcut वाला Version मिल गया!"
+
+"सबका Podcast – हमारा Shortcut!"
+
+"काम की बात – बाकी सब छोड़!"
+${chunkText}`;
+    }
+
+    function processTranscript() {
+      const transcript = document.getElementById("transcript").value;
+      chunkData = splitTranscriptByTime(transcript);
+      const total = chunkData.length;
+      const buttonsContainer = document.getElementById("chunkButtons");
+      buttonsContainer.innerHTML = '';
+      chunkData.forEach((chunk, i) => {
+        const btn = document.createElement("button");
+        btn.innerText = `📋 Copy Chunk ${i + 1}`;
+        btn.className = "chunk-button";
+        btn.onclick = () => {
+          const prompt = generatePrompt(chunk, i, total);
+          navigator.clipboard.writeText(prompt).then(() => {
+            btn.classList.add("copied");
+            btn.innerText = `✅ Copied Chunk ${i + 1}`;
+          });
+        };
+        buttonsContainer.appendChild(btn);
+      });
+    }
+
+    function copyConsoleScript() {
+      const script = document.getElementById("consoleScriptBox").innerText;
+      navigator.clipboard.writeText(script).then(() => alert("✅ Console script copied!"));
+    }
+
+    function copyConsoleScriptAndGoToYouTube() {
+      const script = document.getElementById("consoleScriptBox").innerText;
+      navigator.clipboard.writeText(script).then(() => {
+        alert("✅ Console script copied! Redirecting to YouTube...");
+        window.open("https://www.youtube.com", "_blank");
+      });
+    }
+
+    function copyDriveScriptAndGoToDrive() {
+      const script = document.getElementById("driveScriptBox").innerText;
+      navigator.clipboard.writeText(script).then(() => {
+        alert("✅ Google Drive console script copied! Redirecting to Google Drive...");
+        window.open("https://drive.google.com", "_blank");
+      });
+    }
+
+    function pasteTranscript() {
+      navigator.clipboard.readText()
+        .then(text => {
+          document.getElementById("transcript").value = text;
+          alert("📥 Transcript pasted from clipboard!");
+          processTranscript(); // Automatically generate chunks after pasting
+        })
+        .catch(err => alert("❌ Failed to paste: " + err));
+    }
+
+    function pasteGoogleTranscript() {
+      navigator.clipboard.readText()
+        .then(html => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          const segments = doc.querySelectorAll('.JnEIz');
+          let transcriptText = '';
+          segments.forEach(seg => {
+            const time = seg.querySelector('.QvmvOc')?.innerText.trim();
+            const text = seg.querySelector('.wyBDIb')?.innerText.trim();
+            if (time && text) {
+              transcriptText += `${time} - ${text}\n`;
+            }
+          });
+          if (transcriptText.trim().length > 0) {
+            document.getElementById("transcript").value = transcriptText;
+            alert("✅ Transcript extracted from Google Drive format!");
+            processTranscript();
+          } else {
+            alert("❌ No valid transcript segments found. Make sure you copied the right Google Drive transcript HTML.");
+          }
+        })
+        .catch(err => alert("❌ Failed to paste: " + err));
+    }
+
+    function toggleQuickTutorial() {
+      const tut = document.getElementById('quickTutorialFloating');
+      tut.style.display = tut.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Dark/Light mode with localStorage, default dark
+    function setMode(mode) {
+      const body = document.body;
+      const btn = document.getElementById('modeToggleBtn');
+      if (mode === 'dark') {
+        body.classList.add('dark-mode');
+        btn.innerText = '☀️ Light Mode';
+        localStorage.setItem('yt_chunker_mode', 'dark');
+      } else {
+        body.classList.remove('dark-mode');
+        btn.innerText = '🌙 Dark Mode';
+        localStorage.setItem('yt_chunker_mode', 'light');
+      }
+    }
+    function toggleMode() {
+      const isDark = document.body.classList.contains('dark-mode');
+      setMode(isDark ? 'light' : 'dark');
+    }
+    // On load: set mode from localStorage, default dark
+    (function() {
+      const saved = localStorage.getItem('yt_chunker_mode');
+      if (saved === 'light') setMode('light');
+      else setMode('dark');
+    })();
+  </script>
+</body>
+</html>
