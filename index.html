@@ -674,7 +674,9 @@
   <div class="container">
     <button onclick="pasteTranscript()">📥 Paste Transcript</button>
     <button onclick="processTranscript()">⚡ Generate Chunks</button>
- 
+   <button id="showTutorialBtn" onclick="toggleQuickTutorial()" style="position:fixed;right:18px;bottom:24px;z-index:1002;background:#ffc107;color:#333;border:none;border-radius:50%;width:54px;height:54px;font-size:2em;box-shadow:0 2px 8px #0002;display:flex;align-items:center;justify-content:center;transition:background 0.2s;">❓</button>
+    <button id="modeToggleBtn" onclick="toggleMode()" style="position:fixed;right:18px;top:24px;z-index:1002;background:#007bff;color:#fff;border:none;border-radius:50%;width:54px;height:54px;font-size:2em;box-shadow:0 2px 8px #0002;display:flex;align-items:center;justify-content:center;transition:background 0.2s;">🌙</button>
+
 
     <textarea id="transcript" rows="10" placeholder="Paste full transcript with title here..."></textarea>
 
